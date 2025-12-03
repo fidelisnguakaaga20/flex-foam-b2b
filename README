@@ -1,0 +1,559 @@
+# FLEX FOAM — B2B E-Commerce SaaS  
+**TEST-first, Mobile-first, AI Images**
+
+---
+
+## 0. Context (for any AI / Developer)
+
+This repo is a production-style B2B e-commerce SaaS for **FLEX FOAM**.
+
+- It is structured as a **Next.js App Router** app with Prisma, Tailwind, and Paystack (NG) sandbox/live.
+- We follow a **14-stage implementation plan** (see below).
+- As of now:
+  - Stages **0–11 are already implemented in code**.
+  - We are currently on **Stage 12 — Security, Rate limits, Headers** (almost done).
+  - Stages **13–14** are **upcoming**.
+
+> ⚠️ Very important:
+>
+> - **Do NOT re-implement Stages 0–11 from scratch.**
+> - Treat Stages 0–11 as **DONE**, only touch them if something is broken or explicitly requested.
+> - Focus on **Stage 12 and above**, and on any specific bugs we call out.
+> - We are working **locally only for now**.  
+>   When ready to deploy to Vercel, **all code must pass `next lint` and `next build` locally** and satisfy Vercel’s checks (no missing env vars, etc.).
+
+---
+
+## 1. Project Goal
+
+Build a **dealer/distributor portal** for FLEX FOAM:
+
+- Dealers can browse products, place bulk orders, pay (sandbox first), track production, and download invoices.
+- System runs fully in **TEST mode** first, then flips to **LIVE** with real payments once approved.
+
+---
+
+## 2. MVP Scope
+
+**Public site**
+
+- Home
+- Products overview
+- Company profile
+- Contact / Quote (with WhatsApp deeplink)
+
+**Portal (auth required)**
+
+- Dashboard
+- Products
+- Orders
+- Invoices
+- Admin
+
+**Payments**
+
+- Sandbox checkout + webhooks.
+- TEST invoices clearly watermarked “TEST / NOT A TAX INVOICE”.
+
+**Notifications**
+
+- Email notifications for key events.
+- WhatsApp CTAs (deeplinks) from order pages.
+
+**Mobile-first**
+
+- All screens responsive from ≤360px up to desktop.
+
+---
+
+## 3. System Modes
+
+- **TEST (default)**  
+  - `APP_MODE=test`  
+  - Global banner: “TEST MODE — No real charges.”  
+  - Sandbox keys, seeded demo data, TEST watermarks.
+
+- **LIVE**  
+  - `APP_MODE=live`  
+  - Production keys, real payments, clean data, no TEST watermark/banner.
+
+---
+
+## 4. Roles
+
+- **Admin (Factory)** – manage products, pricing, orders, users, reports.
+- **Dealer / Distributor** – place orders, track status, download invoices.
+- **Support Staff** – update production/delivery statuses.
+- **Public User** – view catalog, request quote only (no portal access).
+
+---
+
+## 5. Core Features (MVP)
+
+1. **Auth & RBAC** – email/Google login, roles enforced server-side.
+2. **Product Catalog** – foam types, density, size, price; search and filter.
+3. **Orders** – create → pay (sandbox) → status timeline:  
+   `Created → Paid → In Production → Dispatched → Delivered`.
+4. **Invoices** – auto PDF, TEST watermark, numbering, download/email.
+5. **Payments** – sandbox provider (Paystack/Stripe/Flutterwave), signed webhooks.
+6. **Dashboard** – KPIs: orders by status, recent payments, top SKUs.
+7. **Admin** – CRUD products/prices, user management, audit logs.
+8. **Notifications** – emails + WhatsApp CTAs from order page.
+9. **Analytics & Logs** – page analytics, server logs, audit trail.
+
+---
+
+## 6. AI Image Generation
+
+All non-logo images are **AI-generated**, brand-consistent:
+
+- **Brand inputs**: Company = “FLEX FOAM”; use consistent logo & colors.
+- **Image set**:
+  - Hero banners (1920×1080) – premium foam stacks, logo lockup.
+  - Product renders (1200×900, 6–10 images) – sheet, rebond, memory, packaging inserts.
+  - Category headers (1600×900, 4–6) – bedding, furniture, packaging, auto.
+  - Process visuals (1600×900, 3–4) – cutting, curing, QA.
+  - Texture backgrounds – subtle foam textures (tileable).
+  - Social/OG – 1200×630 + 1080×1080.
+
+**Formats & optimization**
+
+- Primary: AVIF/WEBP, with PNG fallback.
+- Semantic filenames (e.g. `foam-sheet-25kgm3.webp`).
+- Alt text and “CGI/Render” note where relevant.
+
+---
+
+## 7. Mobile-First UX Rules
+
+- Breakpoints: **360 / 480 / 768 / 1024 / 1280+**. Design from 360px upwards.
+- Nav: sticky top bar, 2-level menu collapses to drawer on mobile.
+- Tables: responsive (stacked or horizontal scroll), CTAs always visible.
+- Tap targets: ≥44px; large inputs; skeletons for loading.
+- Perf: lazy images, responsive `<img>`/`<Image>` sizes, code-split pages.
+
+---
+
+## 8. Data Model (High Level)
+
+- **Tenant**: `Tenant(id, name)`
+- **User & Role**: `User(id, email, name)`, `Member(userId, tenantId, role)`
+- **Product**: `Product(id, sku, name, density, dimensions, price)`
+- **Order**: `Order(id, tenantId, customerRef, status, total, createdAt)`
+- **OrderItem**: `OrderItem(orderId, productId, qty, unitPrice)`
+- **Payment**: `Payment(orderId, provider, ref, amount, status)`
+- **AuditLog**: `AuditLog(actor, action, meta, timestamp)`
+
+---
+
+## 9. Seed Data (TEST Mode)
+
+- Tenant: **FLEX FOAM**.
+- Users: 1 admin, 1 staff, 2 dealers.
+- Products: at least 6 SKUs (Sheet-25kg/m³, Rebond-80kg/m³, Memory-55kg/m³, etc.).
+- Orders: at least one in each key status for demo dashboards.
+- Prices: realistic wholesale ranges (₦ or USD).
+
+---
+
+## 10. Payments (Sandbox)
+
+- Sandbox checkout with test cards.
+- Success/cancel URLs configured.
+- Webhooks:
+  - Secure endpoint.
+  - Signature verification.
+  - Idempotent upserts.
+- Invoice watermark in TEST: “TEST / NOT A TAX INVOICE”.
+- Kill switch to disable checkout if needed.
+
+---
+
+## 11. Non-Functional Requirements
+
+- **Security**: server-side role checks, rate limit, secure headers.
+- **Performance**: image optimization, caching, DB indexes (`sku`, `status`, `createdAt`).
+- **Accessibility**: alt text, labels, contrast ≥ 4.5:1, keyboard nav.
+- **SEO** (public pages): sitemap, robots, OpenGraph, structured data.
+- **Observability**: error tracking, request logging, basic uptime.
+
+---
+
+## 12. Environments & Domains
+
+- **Staging (TEST)**: `staging.ngutopfoam.com`  
+  Sandbox keys + seeded DB + TEST banner/watermarks.
+
+- **Production (LIVE)**: `app.ngutopfoam.com`  
+  Live keys + clean DB (no demo orders/users).
+
+Separate env vars and databases; no cross-contamination.
+
+---
+
+## 13. Acceptance Criteria (MVP Sign-Off)
+
+- Public site loads with AI images and passes **Lighthouse ≥ 90 mobile**.
+- Dealer flow:
+  - Log in → add to order → pay with test card → see `PAID` → download TEST invoice PDF → receive email.
+- Admin:
+  - CRUD products, move orders through all statuses, see audit entries.
+- Dashboard:
+  - Shows KPIs from seeded + new data.
+- TEST banner visible on every portal screen; switching to LIVE hides banner and uses live keys with one small verified transaction.
+
+---
+
+## 14. Go-Live Checklist
+
+1. Replace sandbox keys with production keys (auth, payments, email).
+2. Migrate schema to prod DB; seed only catalog (no demo orders/users).
+3. Configure live webhook; run a small real payment.
+4. Set `APP_MODE=live`; remove TEST watermark/banner; keep audit logs.
+5. Announce launch; keep staging online for demos/regression tests.
+
+---
+
+## 15. Nice-To-Have (Phase 2+)
+
+- Advanced analytics: sales by region, top dealers, lead times.
+- Realtime updates: live order status (Pusher/Ably/Socket.io).
+- Credit terms: partial payments, net-30 flows.
+- White-label: multi-tenant onboarding for other factories.
+- AI assistant: recommends densities/specs per use case.
+
+---
+
+## 16. Global Navigation Rule
+
+**Always ensure the user can get back to Home (`/`) quickly.**
+
+For every page/screen/view:
+
+- Desktop:
+  - Top navbar shows logo + “Home”.
+- Mobile:
+  - Drawer/menu includes “Home”.
+  - Tapping logo also goes to Home.
+
+Deep pages (Order Details, Invoice view, error pages, etc.):
+
+- Keep the shared layout/navbar.
+- Provide a sensible “back” link (e.g. “← Back to Orders”), **and** ensure Home is reachable in one hop via navbar/logo.
+
+---
+
+## 17. Implementation Stages — Status, Home Navigation, Expected Result
+
+> **Status note:**  
+> Stages **0–11 are already implemented in this repo**.  
+> **Stage 12 is the current focus.**  
+> Stages **13–14** are upcoming.
+
+### Stage 0 — Project Scaffold, TEST Mode, Mobile-First Shell  
+**Status:** ✅ Done
+
+- Next.js App Router, Tailwind, Prisma, initial setup.
+- `APP_MODE=test` and global TEST banner.
+- Base routes: `/`, `/products`, `/portal` shells.
+- Mobile-first layout + navbar/drawer.
+
+**Home navigation requirement**
+
+- Navbar + mobile menu expose “Home”.
+
+**Expected end result**
+
+- App runs locally in TEST mode with visible TEST banner.  
+- All base pages load and user can always reach **Home** from navbar/logo.
+
+---
+
+### Stage 1 — Repo Hygiene & Mode Flip (Live-Ready Wiring)  
+**Status:** ✅ Done
+
+- `.env.*` for local/staging/prod, APP_MODE, DB, keys.
+- TEST vs LIVE behavior for banner + keys.
+- Lint/format/CI scripts.
+
+**Home navigation requirement**
+
+- In both TEST and LIVE configs, navbar/drawer still route correctly to Home.
+
+**Expected end result**
+
+- Changing APP_MODE changes behavior without runtime errors.  
+- `next lint` and `next build` pass.  
+- In all modes, user can still navigate back to **Home**.
+
+---
+
+### Stage 2 — Public Site: Home, Company, Products Overview, Contact/Quote  
+**Status:** ✅ Done
+
+- Public pages: Home, Company, Products overview, Contact (with WhatsApp deeplink).
+- SEO: titles, meta, OG, sitemap, robots.
+
+**Home navigation requirement**
+
+- All public pages share NavBar; “Home” visible on desktop and in mobile menu.
+
+**Expected end result**
+
+- Public user can browse Home → Company → Products → Contact, use WhatsApp deeplink, and always get back to **Home**.
+
+---
+
+### Stage 3 — Auth & RBAC (TEST)  
+**Status:** ✅ Done
+
+- Dev login/auth.
+- User/Member/Role models.
+- Server-side role checks for `/portal/*`.
+- Protected portal routes.
+
+**Home navigation requirement**
+
+- Auth pages (login/dev login) show a way back to Home.  
+- Portal layout keeps logo → Home.
+
+**Expected end result**
+
+- Dealer/Admin/Staff can log in and reach portal.  
+- Unauthorized users are blocked.  
+- From Login and Dashboard, user can still reach **Home**.
+
+---
+
+### Stage 4 — Portal Skeleton: Dashboard, Products, Orders, Invoices  
+**Status:** ✅ Done
+
+- `/portal/dashboard`, `/portal/products`, `/portal/orders`, `/portal/invoices`.
+- Shared portal layout with TEST banner.
+
+**Home navigation requirement**
+
+- Portal layout header/logo links back to public Home.  
+- Optionally a “Back to public site” link on Dashboard.
+
+**Expected end result**
+
+- Logged-in user sees a functional portal skeleton.  
+- No portal page is a dead end; user can always navigate back to **Home**.
+
+---
+
+### Stage 5 — Admin Product CRUD (TEST)  
+**Status:** ✅ Done
+
+- Product model with DB CRUD.
+- Admin product list with filters.
+- Admin create/edit/delete forms.
+- Admin-only access.
+
+**Home navigation requirement**
+
+- Admin product pages reuse shared layout (logo → Home).  
+- “Back to Products” or breadcrumbs avoid dead-end pages.
+
+**Expected end result**
+
+- Admin can manage products fully from UI.  
+- Dealers see updated catalog.  
+- Admin never loses the path back to **Home**.
+
+---
+
+### Stage 6 — Order Flow & Cart (TEST)  
+**Status:** ✅ Done
+
+- Dealer product listing with “Add to cart”.
+- Cart page (items, totals, update/remove).
+- “Place Order” creates Order + OrderItems (`Created` status).
+- Basic Order Details page.
+
+**Home navigation requirement**
+
+- Product list, Cart, Order Details share layout with Home in nav.  
+- Cart/Order Details include “Back to Products” where needed.
+
+**Expected end result**
+
+- Dealer can go Products → Cart → Place Order → see Order in `Created` status.  
+- At every step, can return to Products or **Home**.
+
+---
+
+### Stage 7 — Payments (Sandbox: Paystack for NG)  
+**Status:** ✅ Done
+
+- Sandbox Paystack integration.
+- “Pay now” → redirect to sandbox checkout.
+- Success/cancel handling.
+- Payment records stored with status.
+
+**Home navigation requirement**
+
+- Success/Failure/Cancel screens include “Go to Dashboard” and/or “Go to Home”.  
+- Cart/Order pages keep navbar/logo → Home.
+
+**Expected end result**
+
+- From a `Created` order, dealer can test-pay and see success/failure.  
+- Flow never traps the user; they can always go back to Dashboard or **Home**.
+
+---
+
+### Stage 8 — Webhooks + Idempotency  
+**Status:** ✅ Done
+
+- Webhook endpoint with signature verification.
+- On success, Payment → `Paid`, Order → `Paid`.
+- Idempotent handling & logging to AuditLog.
+
+**Home navigation requirement**
+
+- Order Details page (showing updated status) uses standard layout so user can reach **Home**.
+
+**Expected end result**
+
+- Sandbox webhooks correctly update Orders/Payments.  
+- Replayed events do nothing harmful.  
+- Dealer refreshes Order page, sees `Paid`, and still has full portal + Home navigation.
+
+---
+
+### Stage 9 — Invoice PDF with TEST Watermark  
+**Status:** ✅ Done
+
+- PDF generation for invoices.
+- Invoice number, logo, order info, items, totals, status.
+- TEST watermark in TEST mode.
+- Auth-protected invoice view/download.
+
+**Home navigation requirement**
+
+- Invoice view page has “Back to Order” and shares layout with Home via navbar/logo.
+
+**Expected end result**
+
+- Dealer with a `Paid` order can download a TEST watermark invoice PDF.  
+- Admin can view invoices for audits.  
+- From invoice flows, user can still return to Orders and **Home**.
+
+---
+
+### Stage 10 — Notifications (Email + WhatsApp)  
+**Status:** ✅ Done
+
+- Email notifications for Order Created, Payment Paid, status changes.
+- Email templates include portal links and public Home link.
+- WhatsApp CTA on Order Details with prefilled text.
+
+**Home navigation requirement**
+
+- Email links land on portal pages that still have full nav and lead to **Home** if needed.
+
+**Expected end result**
+
+- Dealers receive lifecycle emails.  
+- Clicking email links takes them to portal screens with intact navigation, including a path to **Home**.
+
+---
+
+### Stage 11 — KPIs Dashboard  
+**Status:** ✅ Done
+
+- Seed demo Orders/Payments (various statuses).
+- Admin KPIs: orders by status, recent payments, top SKUs.
+- Query optimization and indexes.
+
+**Home navigation requirement**
+
+- Admin Dashboard and drill-down pages share layout and keep a path back to public **Home**.
+
+**Expected end result**
+
+- Admin sees live TEST KPIs and can click into details.  
+- At all times, navigation back to **Home** is obvious and functional.
+
+---
+
+### Stage 12 — Security, Rate Limits, Headers  
+**Status:** 🔄 In progress (current stage)
+
+**To do**
+
+- Tighten server-side checks on all critical API routes (auth + RBAC).
+- Remove dev-only bypasses.
+- Implement rate limiting for:
+  - Login, contact form.
+  - Key public APIs that could be abused.  
+- Add security headers (CSP, X-Frame-Options, X-Content-Type-Options, etc.) with `middleware.ts` / config.
+- Log blocked access + rate limit hits to AuditLog.
+- Implement friendly 403/404/429 pages.
+
+**Home navigation requirement**
+
+- 403/404/429 pages must include a **“Back to Home”** button.  
+- After rate limits or forbidden access, user should have an easy path back to **Home**.
+
+**Expected end result**
+
+- App is hardened:
+  - Strict role checks on server.
+  - Rate limits on sensitive endpoints.
+  - Security headers applied.  
+- Error/limit pages are user-friendly and never leave users stuck.  
+- `next lint` and `next build` continue to pass after these changes.
+
+---
+
+### Stage 13 — Staging/Prod Env Wiring & Go-Live Checklist  
+**Status:** ⏭️ Upcoming
+
+- Deploy **staging** (`staging.ngutopfoam.com`) with TEST mode, sandbox keys, seeded demo data, TEST banner/watermarks.
+- Deploy **production** (`app.ngutopfoam.com`) with LIVE mode, live keys, clean DB.
+- Configure live webhooks; run one small real payment.
+- Run full Go-Live checklist (APP_MODE, keys, logging, monitoring).
+- Ensure project passes Vercel checks:
+  - `next lint`, `next build` pass locally.
+  - All required env vars present for build/runtime.
+
+**Home navigation requirement**
+
+- Verify both staging and prod domains keep correct Home routing.  
+- Email/invoice links point to the correct host, and Home works there.
+
+**Expected end result**
+
+- Staging and production are fully deployed and separated.  
+- Staging stays TEST-only; production is LIVE with real payments.  
+- Navigation patterns remain intact, and app passes Vercel’s build/lint checks.
+
+---
+
+### Stage 14 — AI Images: Hero/Product/Process + `<Image>` Wiring  
+**Status:** ⏭️ Upcoming
+
+- Generate AI images for:
+  - Hero banners.
+  - Product renders.
+  - Category headers.
+  - Process visuals.
+  - Texture backgrounds.
+  - Social/OG assets.
+- Export AVIF/WEBP + PNG fallback, semantic filenames, alt text (“CGI/Render” where relevant).
+- Replace placeholders on public and key portal pages.
+- Wire Next.js `<Image>` with responsive `sizes`, lazy loading, etc.
+- Re-run Lighthouse and accessibility checks.
+
+**Home navigation requirement**
+
+- After swapping images, confirm layout/nav unchanged and Home remains the main entry point.
+
+**Expected end result**
+
+- All visuals are AI-generated, brand-consistent assets.  
+- Public site hits ≈≥90 Lighthouse on mobile (perf, SEO, a11y).  
+- Navigation still works exactly as before, with clear paths to **Home**, and Vercel checks continue to pass.

@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  users     Member[]
+  products  Product[]
+  orders    Order[]
+  createdAt DateTime   @default(now())
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String?
+  members   Member[]
+  createdAt DateTime   @default(now())
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  DEALER
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tenantId])
+}
+
+model Product {
+  id         String       @id @default(cuid())
+  tenant     Tenant       @relation(fields: [tenantId], references: [id])
+  tenantId   String
+  sku        String       @unique
+  name       String
+  density    String
+  dimensions String
+  price      BigInt       // kobo
+  createdAt  DateTime     @default(now())
+  items      OrderItem[]
+
+  isActive   Boolean      @default(true) // soft-delete flag
+
+  @@index([tenantId, sku])
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  IN_PRODUCTION
+  DISPATCHED
+  DELIVERED
+}
+
+model Order {
+  id          String       @id @default(cuid())
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  tenantId    String
+  customerRef String
+  status      OrderStatus  @default(CREATED)
+  total       BigInt       @default(0) // kobo
+  createdAt   DateTime     @default(now())
+  items       OrderItem[]
+  payment     Payment?
+
+  @@index([tenantId, status, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  qty       Int
+  unitPrice BigInt  // kobo
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  order     Order         @relation(fields: [orderId], references: [id])
+  orderId   String        @unique
+  provider  String
+  ref       String        @unique
+  amount    BigInt        // kobo
+  status    PaymentStatus @default(INITIATED)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt]) // <<< added for KPIs
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  meta      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  provider  String
+  eventId   String
+  createdAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+}
+

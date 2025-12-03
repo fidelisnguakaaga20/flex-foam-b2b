@@ -1,0 +1,38 @@
+{
+  "name": "flex-foam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.18.0",
+    "clsx": "2.1.1",
+    "fontkit": "^2.0.4",
+    "next": "14.2.13",
+    "nodemailer": "6.9.13",
+    "pdfkit": "^0.17.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.25",
+    "@types/pdfkit": "^0.17.3",
+    "@types/react": "18.2.66",
+    "@types/react-dom": "18.2.22",
+    "autoprefixer": "10.4.20",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.13",
+    "postcss": "8.4.47",
+    "prisma": "6.18.0",
+    "tailwindcss": "3.4.14",
+    "tsx": "4.19.2",
+    "typescript": "5.6.2"
+  }
+}
