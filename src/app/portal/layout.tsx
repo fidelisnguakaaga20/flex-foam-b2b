@@ -1,5 +1,6 @@
 // src/app/portal/layout.tsx
 import React from "react";
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Portal · FLEX FOAM",

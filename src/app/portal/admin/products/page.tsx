@@ -3,6 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@lib/db";
 
+export const dynamic = "force-dynamic";
+
+
 // Delete server action (soft delete using isActive)
 async function deleteProduct(formData: FormData) {
   "use server";
