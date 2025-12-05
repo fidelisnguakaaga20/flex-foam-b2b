@@ -8,8 +8,19 @@ import AddToCartButton from "@components/products/AddToCartButton";
 export const dynamic = "force-dynamic";
 
 export default async function PublicProductsPage() {
-  // NOTE: no orderBy here to avoid Prisma Invalid invocation on Vercel
-  const products = await prisma.product.findMany();
+  // same logic, but wrapped in try/catch so Prisma failure
+  // doesn't crash the whole route
+  let products: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
+  let dbError = false;
+
+  try {
+    products = await prisma.product.findMany({
+      orderBy: { sku: "asc" },
+    });
+  } catch (err) {
+    console.error("prisma:error /products page", err);
+    dbError = true;
+  }
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
@@ -29,6 +40,14 @@ export default async function PublicProductsPage() {
           View cart / Place order →
         </Link>
       </header>
+
+      {/* If DB is down, show a soft note instead of 500 */}
+      {dbError && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-xs text-amber-200">
+          Products backend is temporarily unavailable. Listing is shown as
+          empty, but the rest of the site is still online.
+        </div>
+      )}
 
       {/* STAGE 14: catalog hero, same PNG */}
       <div className="rounded-xl border border-slate-800 overflow-hidden">
@@ -84,7 +103,9 @@ export default async function PublicProductsPage() {
                   className="px-4 py-6 text-center text-slate-400"
                   colSpan={6}
                 >
-                  No products found.
+                  {dbError
+                    ? "Products could not be loaded right now."
+                    : "No products found."}
                 </td>
               </tr>
             )}
