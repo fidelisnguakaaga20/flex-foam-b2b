@@ -38,7 +38,8 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
   const chunks: Buffer[] = [];
   const p = new Promise<Buffer>((res, rej) => {
     doc.on("data", (c: Buffer) => chunks.push(c));
-    doc.on("end", () => res(Buffer.concat(chunks)));
+    // ⬇️ Type-only fix; runtime behavior is identical
+    doc.on("end", () => res(Buffer.concat(chunks as any)));
     doc.on("error", rej);
   });
 
@@ -146,11 +147,14 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
 }
 
 
-// // src/lib/invoice.ts
+
+// src/lib/invoice.ts
 // import { prisma } from "@lib/db";
 // import { formatNGN } from "@lib/currency";
 // import { IS_TEST } from "@lib/env";
-// import PDFDocument from "pdfkit";
+// // ⬇️ Use the standalone build so fonts are bundled and no Helvetica.afm file read is needed
+// // @ts-ignore - standalone build doesn't ship TS types, but runtime API is identical
+// import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 
 // export async function getOrderFull(id: string) {
 //   return prisma.order.findUnique({
@@ -181,14 +185,9 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
 //     info: { Title: `${title} — ${invoiceNo}`, Author: "FLEX FOAM" },
 //   });
 
-//   // Collect PDF chunks and concat to a single Buffer
-//   const chunks: Uint8Array[] = [];
+//   const chunks: Buffer[] = [];
 //   const p = new Promise<Buffer>((res, rej) => {
-//     doc.on("data", (c: Buffer) => {
-//       // Create a Uint8Array view over the Buffer so TS is happy,
-//       // but the underlying bytes stay exactly the same.
-//       chunks.push(new Uint8Array(c.buffer, c.byteOffset, c.byteLength));
-//     });
+//     doc.on("data", (c: Buffer) => chunks.push(c));
 //     doc.on("end", () => res(Buffer.concat(chunks)));
 //     doc.on("error", rej);
 //   });
@@ -255,7 +254,10 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
 //     doc.fillColor("#111827");
 //     doc.text(it.product.sku, col(0), row(y), { width: 100 });
 //     doc.text(it.product.name, col(100), row(y), { width: 220 });
-//     doc.text(String(it.qty), col(320), row(y), { width: 40, align: "right" });
+//     doc.text(String(it.qty), col(320), row(y), {
+//       width: 40,
+//       align: "right",
+//     });
 //     doc.text(formatNGN(it.unitPrice), col(360), row(y), {
 //       width: 80,
 //       align: "right",
@@ -273,7 +275,10 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
 //     .strokeColor("#e5e7eb")
 //     .stroke();
 //   doc.fontSize(11).fillColor("black");
-//   doc.text("Total:", col(360), row(y + 12), { width: 80, align: "right" });
+//   doc.text("Total:", col(360), row(y + 12), {
+//     width: 80,
+//     align: "right",
+//   });
 //   doc.text(formatNGN(order.total), col(440), row(y + 12), {
 //     width: 100,
 //     align: "right",
@@ -283,11 +288,10 @@ export async function renderInvoicePdf(orderId: string): Promise<Buffer> {
 //   doc.text(
 //     IS_TEST
 //       ? "Generated in TEST MODE. Not a tax invoice."
-//       : "Thank you for your business.",
+//       : "Thank you for your business."
 //   );
 
 //   doc.end();
 //   return p;
 // }
-
 
