@@ -1,22 +1,28 @@
 // src/app/products/page.tsx
-import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { formatNGN } from "@/lib/currency";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+// Simple NGN formatter, local to this file
+function formatNGN(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  // ⬇️ This is the original behaviour: if Prisma/DB is broken,
-  // Next will show a 500. When DB is correct, products work fully.
+  // Real DB call – this keeps your original behaviour
   const products = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
   });
 
   return (
     <main className="min-h-screen bg-black text-white">
-      {/* TEST banner is handled globally in layout/header – no changes here */}
-
       <section className="max-w-6xl mx-auto px-4 py-10">
         <header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -45,49 +51,38 @@ export default async function ProductsPage() {
             {products.map((product) => (
               <article
                 key={product.id}
-                className="flex flex-col overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950/60 shadow-lg shadow-black/40"
+                className="flex flex-col overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950/60 shadow-lg shadow-black/40 p-4"
               >
-                {product.imageUrl && (
-                  <div className="relative h-40 w-full">
-                    <Image
-                      src={product.imageUrl}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                    />
-                  </div>
+                <h2 className="text-base font-semibold">{product.name}</h2>
+
+                {product.sku && (
+                  <p className="mt-1 text-xs text-neutral-400">
+                    SKU: {product.sku}
+                  </p>
+                )}
+                {product.density && (
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Density: {product.density}
+                  </p>
+                )}
+                {product.dimensions && (
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Dimensions: {product.dimensions}
+                  </p>
                 )}
 
-                <div className="flex flex-1 flex-col px-4 py-3">
-                  <h2 className="text-base font-semibold">{product.name}</h2>
-                  {product.sku && (
-                    <p className="mt-1 text-xs text-neutral-400">
-                      SKU: {product.sku}
-                    </p>
-                  )}
-                  {product.density && (
-                    <p className="mt-1 text-xs text-neutral-400">
-                      Density: {product.density}
-                    </p>
-                  )}
-                  {product.dimensions && (
-                    <p className="mt-1 text-xs text-neutral-400">
-                      Dimensions: {product.dimensions}
-                    </p>
-                  )}
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="font-semibold text-yellow-300">
+                    {formatNGN(Number(product.price))}
+                  </span>
 
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="font-semibold text-yellow-300">
-                      {formatNGN(product.price)}
-                    </span>
-                    <Link
-                      href={`/portal/cart?add=${product.id}`}
-                      className="rounded-full border border-yellow-400 px-3 py-1 text-xs font-semibold text-yellow-300 hover:bg-yellow-400 hover:text-black transition"
-                    >
-                      Add to cart
-                    </Link>
-                  </div>
+                  {/* Same behaviour as before: adds product to cart via query param */}
+                  <Link
+                    href={`/portal/cart?add=${product.id}`}
+                    className="rounded-full border border-yellow-400 px-3 py-1 text-xs font-semibold text-yellow-300 hover:bg-yellow-400 hover:text-black transition"
+                  >
+                    Add to cart
+                  </Link>
                 </div>
               </article>
             ))}
