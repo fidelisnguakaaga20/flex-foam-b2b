@@ -25,7 +25,7 @@ export default function NavBar() {
         {/* Logo → always goes Home (global rule) */}
         <Link href="/" className="flex items-center gap-2">
           <span className="h-8 w-8 rounded-full bg-slate-100 text-black flex items-center justify-center text-sm font-bold">
-            HF
+            FF
           </span>
           <span className="font-semibold tracking-wide text-sm sm:text-base">
             FLEX FOAM
