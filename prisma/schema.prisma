@@ -2,10 +2,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")  // pooled
+  directUrl = env("DIRECT_URL")    // direct
 }
+
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
 
 model Tenant {
   id        String     @id @default(cuid())
