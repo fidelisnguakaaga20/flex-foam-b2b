@@ -14,20 +14,19 @@ async function createProduct(formData: FormData) {
   const rawPrice = String(formData.get("price") || "").trim();
 
   if (!sku || !name || !rawPrice) {
-    // minimal validation – stay on page for now
+    // minimal validation – stay on page
     return;
   }
 
   // Strip commas for safety ("1,000,000" -> "1000000")
-  const price = rawPrice.replace(/,/g, "");
+  const priceClean = rawPrice.replace(/,/g, "");
+  const priceBigInt = BigInt(priceClean || "0");
 
-  // Ensure FLEX FOAM tenant exists (name is @unique, so upsert is safe)
+  // Ensure FLEX FOAM tenant exists (idempotent)
   const tenant = await prisma.tenant.upsert({
     where: { name: "FLEX FOAM" },
     update: {},
-    create: {
-      name: "FLEX FOAM",
-    },
+    create: { name: "FLEX FOAM" },
   });
 
   await prisma.product.create({
@@ -37,8 +36,8 @@ async function createProduct(formData: FormData) {
       name,
       density,
       dimensions,
-      // Prisma BigInt can accept a numeric string / number
-      price: Number(price),
+      // price is BigInt in Prisma schema
+      price: priceBigInt,
     },
   });
 
@@ -133,13 +132,12 @@ export default function NewProductPage() {
   );
 }
 
-
 // // src/app/portal/admin/products/new/page.tsx
 // import Link from "next/link";
 // import { redirect } from "next/navigation";
 // import { prisma } from "@lib/db";
 
-// // /// Server Action: create product then redirect
+// // Server Action: create product then redirect
 // async function createProduct(formData: FormData) {
 //   "use server";
 
@@ -157,10 +155,14 @@ export default function NewProductPage() {
 //   // Strip commas for safety ("1,000,000" -> "1000000")
 //   const price = rawPrice.replace(/,/g, "");
 
-//   const tenant = await prisma.tenant.findFirst();
-//   if (!tenant) {
-//     throw new Error("No tenant found — seed data missing.");
-//   }
+//   // Ensure FLEX FOAM tenant exists (name is @unique, so upsert is safe)
+//   const tenant = await prisma.tenant.upsert({
+//     where: { name: "FLEX FOAM" },
+//     update: {},
+//     create: {
+//       name: "FLEX FOAM",
+//     },
+//   });
 
 //   await prisma.product.create({
 //     data: {
@@ -169,7 +171,7 @@ export default function NewProductPage() {
 //       name,
 //       density,
 //       dimensions,
-//       // Prisma Decimal/Int can accept a numeric string
+//       // Prisma BigInt can accept a numeric string / number
 //       price: Number(price),
 //     },
 //   });
